@@ -52,19 +52,22 @@ export default {
     data: [],
     cityName,
     select: {
-      city: '台北市',
+      city: '臺北市',
       area: '中正區',
     },
+    center: [25.03, 121.52],
   }),
   components: {
   },
   computed: {
     pharmacies() {
       return this.data.filter((pharmacy) => {
+        const availableCity = pharmacy.properties.county === this.select.city;
+        const availableArea = pharmacy.properties.town === this.select.area;
         if (!this.select.area) {
-          return pharmacy.properties.county === this.select.city;
+          return availableCity;
         }
-        return pharmacy.properties.town === this.select.area;
+        return availableCity && availableArea;
       });
     },
   },
@@ -82,6 +85,12 @@ export default {
           openStreetMap.removeLayer(layer);
         }
       });
+
+      // update center
+      if (this.pharmacies.length > 0) {
+        const newCenter = this.pharmacies[this.pharmacies.length - 1].geometry.coordinates;
+        openStreetMap.panTo(new L.LatLng(newCenter[1], newCenter[0]));
+      }
 
       // add markers
       this.pharmacies.forEach((pharmacy) => {
@@ -110,10 +119,8 @@ export default {
       this.data = response.data.features;
     });
     openStreetMap = L.map('map', {
-      center: [25.03, 121.55],
-      // 可以嘗試改變 zoom 的數值
-      // 筆者嘗試後覺得 18 的縮放比例是較適當的查詢範圍
-      zoom: 18,
+      center: this.center,
+      zoom: 15,
     });
 
     L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
